@@ -1,0 +1,109 @@
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+
+# Step 1: Create sample customer data
+np.random.seed(42)
+
+customers = 200
+data = []
+
+for customer_id in range(1, customers + 1):
+    frequency = np.random.randint(1, 20)
+    aov = np.random.randint(100, 2000)
+    recency = np.random.randint(1, 365)
+
+    total_spending = frequency * aov
+    ltv = total_spending + np.random.randint(100, 1000)
+
+    data.append([
+        customer_id,
+        frequency,
+        recency,
+        aov,
+        ltv
+    ])
+
+df = pd.DataFrame(data, columns=[
+    "CustomerID",
+    "Frequency",
+    "Recency",
+    "AOV",
+    "LTV"
+])
+
+print("Customer Dataset:")
+print(df.head())
+
+# Step 2: Feature selection
+X = df[["Frequency", "Recency", "AOV"]]
+y = df["LTV"]
+
+# Step 3: Split dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Step 4: Train Random Forest Model
+model = RandomForestRegressor(
+    n_estimators=100,
+    random_state=42
+)
+
+model.fit(X_train, y_train)
+
+# Step 5: Predict LTV
+predictions = model.predict(X_test)
+
+# Step 6: Model Evaluation
+mae = mean_absolute_error(y_test, predictions)
+rmse = np.sqrt(mean_squared_error(y_test, predictions))
+
+print("\nModel Evaluation")
+print("MAE:", round(mae, 2))
+print("RMSE:", round(rmse, 2))
+
+# Step 7: Predict all customers
+df["Predicted_LTV"] = model.predict(X)
+
+# Step 8: Customer Segmentation
+def segment(ltv):
+    if ltv >= 15000:
+        return "High Value"
+    elif ltv >= 7000:
+        return "Medium Value"
+    else:
+        return "Low Value"
+
+df["Customer_Segment"] = df["Predicted_LTV"].apply(segment)
+
+# Step 9: Save CSV
+df.to_csv("LTV_Predictions.csv", index=False)
+
+print("\nFinal LTV Predictions:")
+print(df.head(10))
+
+print("\nCustomer Segmentation:")
+print(df["Customer_Segment"].value_counts())
+
+# Step 10: Visualization
+plt.figure(figsize=(8, 5))
+
+plt.scatter(
+    df["CustomerID"],
+    df["Predicted_LTV"]
+)
+
+plt.xlabel("Customer ID")
+plt.ylabel("Predicted LTV")
+plt.title("Customer Lifetime Value Prediction")
+
+plt.show()
+
+print("\nProject Completed Successfully!")
+print("CSV file saved as LTV_Predictions.csv")
